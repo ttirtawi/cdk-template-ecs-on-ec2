@@ -85,11 +85,13 @@ For the demo I'll use Amazon Linux 2 environment. You can use any other operatin
 
     ```
 
-4. Add the following code on the very top of `lib/cdk-project-stack.ts` to import all required modules. With CDK v2 we don't need to install each module manually, we just need to import from `aws-cdk-lib`:
+4. Add the following code on the very top of `lib/cdk-project-stack.ts` (under Construct) to import all required modules. With CDK v2 we don't need to install each module manually, we just need to import from `aws-cdk-lib`:
 
     ```
     import { Stack, StackProps, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
     import { Construct } from 'constructs';
+    
+    // Add these lines
     import * as ec2 from 'aws-cdk-lib/aws-ec2';
     import * as ecs from 'aws-cdk-lib/aws-ecs';
     import * as alb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
@@ -99,7 +101,7 @@ For the demo I'll use Amazon Linux 2 environment. You can use any other operatin
 
 5. We will added the code step by step throughout this document. We will add the code into the red box area as shown in the following screenshot: 
     
-    ![](default-lib-v2.png)    
+    ![](default-lib-v2.png)
 
 
 ### 🔥 Setup VPC
@@ -153,7 +155,7 @@ There are few steps to create and configure the Elastic Container Service. In th
 2. (Optional) in this step we will define IAM role (with managed policy `AmazonSSMManagedInstanceCore` so that we can reach the instance using SSM Session Manager) for all EC2 instances:
 
     ```
-    //Create IAM Role for EC2 instances
+    // Create IAM Role for EC2 instances
     const role = new iam.Role(this, 'role', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
@@ -168,9 +170,10 @@ There are few steps to create and configure the Elastic Container Service. In th
     // Create EC2 Auto Scaling Group
     const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'asg', {
       vpc,
-      instanceType: new ec2.InstanceType('m5.xlarge'),  //****MODIFY AS REQUIRED****//
+      instanceType: new ec2.InstanceType('m6g.xlarge'),  //****MODIFY AS REQUIRED****//
       machineImage: ecs.EcsOptimizedImage.amazonLinux2(
-        ecs.AmiHardwareType.STANDARD //****MODIFY AS REQUIRED (use ARM for Graviton instance)****//
+        ecs.AmiHardwareType.ARM
+        //****MODIFY AS REQUIRED (use STANDARD for Intel instance and ARM for Graviton instance)****//
       ),
       minCapacity: 1,
       maxCapacity: 5,
@@ -180,8 +183,8 @@ There are few steps to create and configure the Elastic Container Service. In th
     ```
     Some explanation regarding this new Auto Scaling Group: 
     
-      - It will use EC2 instance type `m5.xlarge` (4 vCPU, 16GB RAM) with Amazon Linux 2 operating system (ECS optimized version). 
-      - If you want to use Graviton, change the instance type (for example to `m6g.xlarge`) and also `ecs.AmiHardwareType.STANDARD` to `ecs.AmiHardwareType.ARM`
+      - It will use Graviton EC2 instance type `m6g.xlarge` (4 vCPU, 16GB RAM) with Amazon Linux 2 operating system (ECS optimized version). 
+      - If you want to use Intel processor instead, change the instance type (for example to `m5.xlarge`) and also `ecs.AmiHardwareType.ARM` to `ecs.AmiHardwareType.STANDARD`
       - We set the group capacity with 1 instance at the start and let the Auto Scaling to adjust the capacity with 5 instance at the maximum.
       - We tell the Auto Scaling Group to be launched in the same VPC we had prepared before. By default Auto Scaling Group will launch the EC2 in private subnets only. Optionally you can specify the subnet using `vpcSubnets` attribute. 
       - We attach IAM role that we created before.
@@ -219,7 +222,8 @@ There are few steps to create and configure the Elastic Container Service. In th
 
     // Add Container to the Task Definition
     const container = taskDefinition.addContainer('web', {
-      image: ecs.ContainerImage.fromRegistry('tedytirta/docker-simple-app'),  //****MODIFY AS REQUIRED****//
+      image: ecs.ContainerImage.fromRegistry('tedytirta/demo-docker-ecs'),  
+      //****MODIFY AS REQUIRED USING YOUR DOCKER IMAGE****//
       portMappings: demoPortMapping,
       memoryReservationMiB: 256,  //****MODIFY AS REQUIRED****//
       logging: new ecs.AwsLogDriver({
@@ -227,13 +231,13 @@ There are few steps to create and configure the Elastic Container Service. In th
         mode: ecs.AwsLogDriverMode.NON_BLOCKING
       }),
       environment: {
-        "TITLE": "Run container with Amazon ECS"
+        "TITLE": "Docker on ECS with Graviton EC2"
       },
     });
     ```
 
     Here is the explanation for each section of the code above:
-    - We create Port Mapping configuration which declare the port on which our container will be listened at. The sample container image in this demo will listen at TCP port 8080.
+    - We create Port Mapping configuration which declare the port on which our container will be listened at. The sample container image in this demo will listen at TCP port 8080. Adjust the port based on your Docker image specification.
     - We create Task Definition that will use AWS VPC as networking component. It means that every Task will have its own Elastic Network Interface and its VPC IP address. So each Task will inherit all VPC's capability such as NACL, Security Group, as wel as routing capability.
     - Then the main activity is to define container specification 
       - Container image location
@@ -259,7 +263,6 @@ There are few steps to create and configure the Elastic Container Service. In th
         },
       ]
     })
-
     ```
     
     Basically code snippet above are doing the following:
@@ -369,9 +372,15 @@ After we add all required codes that made up our CDK stack, follow these steps t
     cdk deploy --context accountId=<AWS_ACCOUNT_ID> --context region=<AWS_REGION>
     ```
 
-    Enter `y` to continue.
+    Enter `y` to continue. See the sample output below:
 
-4. It will takes 15-20 minutes to complete the deployment. You can also monitor the CloudFormation stack creation using the following command (default stack name in this example is `CdkProjectStack`):
+    ![](cdk-deploy-confirmation.png)
+
+4. It will takes 15-20 minutes to complete the deployment. You will see the progress like the following sample:
+
+    ![](cdk-deploy-progress.png)
+
+    You can also monitor the CloudFormation stack creation using the following command (default stack name in this example is `CdkProjectStack`):
 
     ```
     while true
@@ -386,6 +395,7 @@ After we add all required codes that made up our CDK stack, follow these steps t
     1. `CREATE_IN_PROGRESS`: resources creation process still ongoing.
     2. `CREATE_COMPLETE`: CloudFormation already finished created all the resources.
     3. `ROLLBACK_COMPLETE`: some error happen during resource creation. If you encounter this message, double check the event that cause the error & fix the CDK stack accordingly.
+
       
 5. When the provisioning process completed, you will see the output similar like this:
 

@@ -35,7 +35,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
       vpc: vpc
     });
 
-    //Create IAM Role for EC2 instances
+    // Create IAM Role for EC2 instances
     const role = new iam.Role(this, 'role', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
@@ -46,9 +46,10 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Create EC2 Auto Scaling Group
     const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'asg', {
       vpc,
-      instanceType: new ec2.InstanceType('m5.xlarge'),  //****MODIFY AS REQUIRED****//
+      instanceType: new ec2.InstanceType('m6g.xlarge'),  //****MODIFY AS REQUIRED****//
       machineImage: ecs.EcsOptimizedImage.amazonLinux2(
-        ecs.AmiHardwareType.STANDARD //****MODIFY AS REQUIRED (use ARM for Graviton instance)****//
+        ecs.AmiHardwareType.ARM
+        //****MODIFY AS REQUIRED (use STANDARD for Intel instance and ARM for Graviton instance)****//
       ),
       minCapacity: 1,
       maxCapacity: 5,
@@ -69,7 +70,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Prepare Port Mapping
     var demoPortMapping: ecs.PortMapping[] = [];
     demoPortMapping.push({
-      containerPort: 80,  //****MODIFY AS REQUIRED****//
+      containerPort: 8080,  //****MODIFY AS REQUIRED****//
       protocol: ecs.Protocol.TCP
     });
 
@@ -80,7 +81,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
 
     // Add Container to the Task Definition
     const container = taskDefinition.addContainer('web', {
-      image: ecs.ContainerImage.fromRegistry('public.ecr.aws/ecs-sample-image/amazon-ecs-sample:latest'),  //****MODIFY AS REQUIRED****//
+      image: ecs.ContainerImage.fromRegistry('tedytirta/demo-docker-ecs'),  //****MODIFY AS REQUIRED****//
       portMappings: demoPortMapping,
       memoryReservationMiB: 256,  //****MODIFY AS REQUIRED****//
       logging: new ecs.AwsLogDriver({
@@ -88,7 +89,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
         mode: ecs.AwsLogDriverMode.NON_BLOCKING
       }),
       environment: {
-        "TITLE": "ECS with Graviton EC2 on Dedicated VPC"
+        "TITLE": "Docker on ECS with Graviton EC2"
       }
     });
 
