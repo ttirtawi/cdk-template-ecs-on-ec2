@@ -17,7 +17,17 @@ This stack will create the following resources:
     - Container image is taken from public Docker Hub account.
     - Service auto scaling.
 
-Please follow along.
+
+
+If you want to quickly deploy this stack, just run the **Prerequisites** section and execute these commands:
+
+```
+git clone https://github.com/ttirtawi/cdk-template-ecs-on-ec2.git
+cd cdk-template-ecs-on-ec2
+cdk deploy
+```
+
+Please follow along if you want to know each step below.
 
 ## 🚀 Prerequisites
 
@@ -46,6 +56,8 @@ For the demo I'll use Amazon Linux 2 environment. You can use any other operatin
 3. You also need AWS credentials (using IAM access/secret key or using EC2 instance role). Use `aws configure` to setup default AWS region & access/secret key. Please remember that your account/role must have sufficient permission to provison AWS resources (e.g. `AdministratorAccess`).
 
 4. It is recommended to use code editor like Visual Code Studio to navigate the CDK's modules easily.
+
+
 
 ## 🚀 Prepare CDK stack class
 
