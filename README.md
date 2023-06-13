@@ -4,7 +4,6 @@ In this document we will show how to use AWS CDK (Cloud Development Kit) version
 
 ![](ecs-diagram-v01.png)
 
-
 This stack will create the following resources:
 
 1. Virtual Private Cloud (VPC) with public & private subnet, and the NAT Gateway.
@@ -16,8 +15,6 @@ This stack will create the following resources:
     - Logging using AWS Log Driver `awslog` with Non-blocking mode.
     - Container image is taken from public Docker Hub account.
     - Service auto scaling.
-
-
 
 If you want to quickly deploy this stack, just run the **Prerequisites** section and execute these commands:
 
