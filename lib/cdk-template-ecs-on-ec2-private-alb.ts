@@ -6,7 +6,7 @@ import * as alb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
-export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
+export class CdkTemplateEcsOnEc2StackPrivateALB extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -47,14 +47,14 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Create EC2 Auto Scaling Group
     const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'asg', {
       vpc,
-      instanceType: new ec2.InstanceType('m6g.xlarge'),  //****MODIFY AS REQUIRED****//
+      instanceType: new ec2.InstanceType('m6g.large'),  //****MODIFY AS REQUIRED****//
       machineImage: ecs.EcsOptimizedImage.amazonLinux2(
         ecs.AmiHardwareType.ARM
         //****MODIFY AS REQUIRED (use STANDARD for Intel instance and ARM for Graviton instance)****//
       ),
       minCapacity: 1,
       maxCapacity: 5,
-      desiredCapacity: 2,
+      desiredCapacity: 1,
       role,
     });
 
@@ -99,7 +99,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
       cluster: cluster,
       taskDefinition: taskDefinition,
       assignPublicIp: false,
-      desiredCount: 5,  //****MODIFY AS REQUIRED****//
+      desiredCount: 1,  //****MODIFY AS REQUIRED****//
       capacityProviderStrategies: [
         {
           capacityProvider: capacityProvider.capacityProviderName,
@@ -111,7 +111,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Create Application Load Balancer
     const lb = new alb.ApplicationLoadBalancer(this, 'loadbalancer', {
       vpc,
-      internetFacing: true,
+      internetFacing: false,
     });
 
     // Create Application Load Balancer HTTP Listener

@@ -3,36 +3,32 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { CdkTemplateEcsOnEc2Stack } from '../lib/cdk-template-ecs-on-ec2-stack';
 import {CdkTemplateEcsOnEc2StackMultiArch} from '../lib/cdk-template-ecs-on-ec2-multiarch';
+import {CdkTemplateEcsOnEc2StackPrivateALB} from '../lib/cdk-template-ecs-on-ec2-private-alb';
+import { CdkTemplateEcsOnEc2StackCorrectIAM } from '../lib/cdk-template-ecs-on-ec2-stack-correct-iam';
+import { CdkTemplateEcsOnEc2StackWrongIAM } from '../lib/cdk-template-ecs-on-ec2-stack-wrong-iam';
 
 const app = new cdk.App();
 new CdkTemplateEcsOnEc2Stack(app, 'CdkTemplateEcsOnEc2Stack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
-
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
-
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
 
 new CdkTemplateEcsOnEc2StackMultiArch(app, 'CdkTemplateEcsOnEc2StackMultiArch', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+});
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+new CdkTemplateEcsOnEc2Stack(app, 'demo-ecs-graviton-jakarta', {
+  env: { account: '452922823873', region: 'ap-southeast-3' },
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+});
+new CdkTemplateEcsOnEc2StackPrivateALB(app, 'demo-ecs-private-alb', {
+  env: { account: '452922823873', region: 'ap-southeast-3' },
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+});
+
+new CdkTemplateEcsOnEc2StackCorrectIAM(app, 'demo1-ecs-correct-iam', {
+  env: { account: '452922823873', region: 'ap-southeast-3' },
+
+});
+
+new CdkTemplateEcsOnEc2StackWrongIAM(app, 'demo2-ecs-wrong-iam', {
+  env: { account: '452922823873', region: 'ap-southeast-3' },
+
 });

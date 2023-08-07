@@ -113,7 +113,7 @@ export class CdkTemplateEcsOnEc2StackMultiArch extends cdk.Stack {
 
     // Add Container to the Task Definition
     const container = taskDefinition.addContainer('web', {
-      image: ecs.ContainerImage.fromRegistry('452922823873.dkr.ecr.ap-southeast-1.amazonaws.com/cdkpipelinebuildmultiarchstack-ecrrepo4ed174df-7m8k8wlegjdt'), 
+      image: ecs.ContainerImage.fromRegistry('452922823873.dkr.ecr.ap-southeast-1.amazonaws.com/cdkpipelinebuildmultiarchstack-ecrrepo4ed174df-rq6ipwkrruiz'), 
        //****MODIFY AS REQUIRED****//
       portMappings: demoPortMapping,
       memoryReservationMiB: 256,  //****MODIFY AS REQUIRED****//

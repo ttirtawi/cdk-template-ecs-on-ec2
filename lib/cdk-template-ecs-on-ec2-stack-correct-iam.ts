@@ -5,26 +5,32 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as alb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as ecrasset from 'aws-cdk-lib/aws-ecr-assets';
+import * as path from 'path';
 
-export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
+export class CdkTemplateEcsOnEc2StackCorrectIAM extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // The code that defines your stack goes here
+    const dockerImageWeb = new ecrasset.DockerImageAsset(this, 'dockerImageWeb', {
+      directory: path.join(__dirname, '../app'),
+      platform: ecrasset.Platform.LINUX_ARM64
+    });
 
     // Create new VPC
     const vpc = new ec2.Vpc(this, 'vpc', {
-      ipAddresses: ec2.IpAddresses.cidr('172.33.0.0/16'), //****MODIFY AS REQUIRED****//
-      maxAzs: 2, //****MODIFY AS REQUIRED****//
+      ipAddresses: ec2.IpAddresses.cidr('172.33.0.0/16'), 
+      maxAzs: 2, 
       natGateways: 1,
       subnetConfiguration: [
         {
-          cidrMask: 24, //****MODIFY AS REQUIRED****//
+          cidrMask: 24, 
           name: 'public',
           subnetType: ec2.SubnetType.PUBLIC,
         },
         {
-          cidrMask: 22, //****MODIFY AS REQUIRED****//
+          cidrMask: 22, 
           name: 'private-nat',
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         }
@@ -47,14 +53,13 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Create EC2 Auto Scaling Group
     const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'asg', {
       vpc,
-      instanceType: new ec2.InstanceType('m6g.xlarge'),  //****MODIFY AS REQUIRED****//
+      instanceType: new ec2.InstanceType('m6g.large'),  
       machineImage: ecs.EcsOptimizedImage.amazonLinux2(
         ecs.AmiHardwareType.ARM
-        //****MODIFY AS REQUIRED (use STANDARD for Intel instance and ARM for Graviton instance)****//
       ),
       minCapacity: 1,
       maxCapacity: 5,
-      desiredCapacity: 2,
+      desiredCapacity: 1,
       role,
     });
 
@@ -71,22 +76,32 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     // Prepare Port Mapping
     var demoPortMapping: ecs.PortMapping[] = [];
     demoPortMapping.push({
-      containerPort: 8080,  //****MODIFY AS REQUIRED****//
+      containerPort: 8080,  
       protocol: ecs.Protocol.TCP
+    });
+
+    // Create Task Execution Role
+    const executionRole = new iam.Role(this, 'executionRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
+      ],
     });
 
     // Create Task Definition
     const taskDefinition = new ecs.Ec2TaskDefinition(this, 'taskDefinition', {
       networkMode: ecs.NetworkMode.AWS_VPC,
+      executionRole
     });
 
     // Add Container to the Task Definition
     const container = taskDefinition.addContainer('web', {
-      image: ecs.ContainerImage.fromRegistry('tedytirta/demo-docker-ecs'),  //****MODIFY AS REQUIRED****//
+      image: ecs.ContainerImage.fromDockerImageAsset(dockerImageWeb),
       portMappings: demoPortMapping,
-      memoryReservationMiB: 256,  //****MODIFY AS REQUIRED****//
+      memoryReservationMiB: 256,  
       logging: new ecs.AwsLogDriver({
-        streamPrefix: 'ECSLogGroup',  //****MODIFY AS REQUIRED****//
+        streamPrefix: 'ECSLogGroup',  
         mode: ecs.AwsLogDriverMode.NON_BLOCKING
       }),
       environment: {
@@ -99,7 +114,7 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
       cluster: cluster,
       taskDefinition: taskDefinition,
       assignPublicIp: false,
-      desiredCount: 5,  //****MODIFY AS REQUIRED****//
+      desiredCount: 5,  
       capacityProviderStrategies: [
         {
           capacityProvider: capacityProvider.capacityProviderName,
@@ -134,11 +149,11 @@ export class CdkTemplateEcsOnEc2Stack extends cdk.Stack {
     })
 
     const serviceAutoScaling = ecsService.autoScaleTaskCount({
-      maxCapacity: 20  //****MODIFY AS REQUIRED****//
+      maxCapacity: 20  
     })
 
     serviceAutoScaling.scaleOnRequestCount('scaleOnRequestCount', {
-      requestsPerTarget: 100,  //****MODIFY AS REQUIRED****//
+      requestsPerTarget: 100,  
       targetGroup
     })
 
